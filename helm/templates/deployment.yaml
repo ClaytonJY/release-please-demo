@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-please-demo
+  labels:
+    app: release-please-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: release-please-demo
+  template:
+    metadata:
+      labels:
+        app: release-please-demo
+    spec:
+      containers:
+      - name: fastapi-app
+        image: "some-docker-repo/release-please-demo-api:{{ .Values.versions.api }}"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
