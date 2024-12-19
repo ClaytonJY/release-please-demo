@@ -11,7 +11,7 @@
         {
           "type": "yaml",
           "path": "helm/values.yaml",
-          "jsonpath": "$.version.api"
+          "jsonpath": "$.versions.api"
         }
       ]
     }
