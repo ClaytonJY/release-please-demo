@@ -1,0 +1,20 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        # with:
+          # will need a PAT to trigger checks from release-please PRs
+          # https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
+          # token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
