@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.0.0...v1.1.0) (2024-12-26)
+
+
+### Features
+
+* Make API less friendly ([#8](https://github.com/ClaytonJY/release-please-demo/issues/8)) ([8fac15d](https://github.com/ClaytonJY/release-please-demo/commit/8fac15de8ec90718fa8a9c8df8998ed12c61e953))
+
 ## [1.0.0](https://github.com/ClaytonJY/release-please-demo/compare/v0.1.0...v1.0.0) (2024-12-19)
 
 
