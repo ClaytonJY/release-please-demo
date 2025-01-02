@@ -1,3 +1,5 @@
+name: Release, Please!
+
 on:
   push:
     branches:
@@ -7,14 +9,35 @@ permissions:
   contents: write
   pull-requests: write
 
-name: release-please
-
 jobs:
-  release-please:
+  release-pr:
+    name: Create Release PR
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - name: Create PR with release-please
+        id: release-please
+        uses: googleapis/release-please-action@v4
         # with:
           # will need a PAT to trigger checks from release-please PRs
           # https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
           # token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+
+      # release-please is unable to update uv.lock, so we do it ourselves
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
+
+      - name: Setup `uv`
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          prune-cache: false  # faster on github-hosted runners
+
+      - name: Update `uv.lock`
+        run: |
+          uv lock
+          git add uv.lock
+          git commit -m "ci: update uv.lock"
+          git push
