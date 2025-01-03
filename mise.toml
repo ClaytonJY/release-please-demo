@@ -1,3 +1,4 @@
 [tools]
 helm = "latest"
+"npm:release-please" = "latest"
 uv = "latest"
