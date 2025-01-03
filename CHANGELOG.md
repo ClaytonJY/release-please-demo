@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.1.0...v1.2.0) (2025-01-03)
+
+
+### Features
+
+* Update lockfile via commit rather than extra-files. ([#13](https://github.com/ClaytonJY/release-please-demo/issues/13)) ([c47de50](https://github.com/ClaytonJY/release-please-demo/commit/c47de50d7e6db9c04908e7301692cc93e702106d))
+
+
+### Bug Fixes
+
+* Configure git user/email before using git in release workflow. ([#14](https://github.com/ClaytonJY/release-please-demo/issues/14)) ([8f765a7](https://github.com/ClaytonJY/release-please-demo/commit/8f765a79b76170cb3bd648b924e09e0530d7514a))
+* update uv lock ([#11](https://github.com/ClaytonJY/release-please-demo/issues/11)) ([ccfcf25](https://github.com/ClaytonJY/release-please-demo/commit/ccfcf25372e1e5d39cf4e6c75539add0bfd39061))
+
 ## [1.1.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.0.0...v1.1.0) (2024-12-26)
 
 
