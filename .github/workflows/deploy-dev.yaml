@@ -1,0 +1,55 @@
+name: Deploy to Dev
+
+on:
+  workflow_dispatch
+
+jobs:
+  deploy-to-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v4
+
+      - name: Determine new version tag
+        run: |
+          echo "VERSION=dev-${GITHUB_SHA::7}" >> "${GITHUB_ENV}"
+
+      - name: Create & push Release-As commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${VERSION}"
+          git commit --allow-empty -m "chore: release ${VERSION}" -m "Release-As: ${VERSION}"
+          git push origin "${VERSION}"
+
+      - name: Create release PR to development branch
+        id: release-please
+        uses: googleapis/release-please-action@v4
+        with:
+          # will need a PAT to trigger checks from release-please PRs
+          # https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
+          # token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          target-branch: development
+          skip-github-release: true
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
+
+      - name: Setup `uv`
+        uses: astral-sh/setup-uv@v5
+
+      - name: Update `uv.lock`
+        run: |
+          uv lock
+          git add uv.lock
+          git commit -m "ci: update uv.lock"
+          git push
+
+      - name: Auto-merge release PR after checks pass
+        run: |
+          gh pr merge ${{ fromJson(steps.release-please.outputs.pr).number }} \
+            --repo "${{ github.repository }}" \
+            --squash \
+            --auto
