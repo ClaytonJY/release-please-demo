@@ -3,24 +3,35 @@ name: Deploy to Dev
 on:
   workflow_dispatch
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   deploy-to-dev:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out this repo
+      - name: Check out feature branch
         uses: actions/checkout@v4
 
       - name: Determine new version tag
         run: |
-          echo "VERSION=dev-${GITHUB_SHA::7}" >> "${GITHUB_ENV}"
+          # create a "post-release" by appending short commit SHA to existing version
+          HEAD_VERSION="$(jq -r '.["."]' .release-please-manifest.json)"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "VERSION=${HEAD_VERSION}+${SHORT_SHA}" >> "${GITHUB_ENV}"
 
-      - name: Create & push Release-As commit
+      - name: Check out the development branch
+        uses: actions/checkout@v4
+        with:
+          ref: development
+
+      - name: Create & push Release-As commit on development branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "${VERSION}"
-          git commit --allow-empty -m "chore: release ${VERSION}" -m "Release-As: ${VERSION}"
-          git push origin "${VERSION}"
+          git commit --allow-empty -m "ci: release ${VERSION}" -m "Release-As: ${VERSION}"
+          git push
 
       - name: Create release PR to development branch
         id: release-please
@@ -48,8 +59,24 @@ jobs:
           git push
 
       - name: Auto-merge release PR after checks pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr merge ${{ fromJson(steps.release-please.outputs.pr).number }} \
-            --repo "${{ github.repository }}" \
-            --squash \
-            --auto
+          # merge command tends to fail first try
+          # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
+          for i in {1..3}; do
+            if gh pr merge ${{ fromJson(steps.release-please.outputs.pr).number }} \
+              --repo "${{ github.repository }}" \
+              --squash \
+              --auto \
+              --delete-branch; then
+              # if success, break out of loop
+              break
+            else
+              if [[ $i -eq 3 ]]; then
+                echo "Failed to merge PR after 3 attempts"
+                exit 1
+              fi
+              sleep 5
+            fi
+          done
