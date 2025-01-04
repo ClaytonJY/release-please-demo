@@ -6,6 +6,9 @@ on:
 permissions:
   contents: write
   pull-requests: write
+
+  # need a lot to edit PRs to remove label
+  # see https://github.com/cli/cli/issues/6274#issuecomment-2439692639
   checks: read
   statuses: read
   actions: read
@@ -41,9 +44,9 @@ jobs:
         id: release-please
         uses: googleapis/release-please-action@v4
         with:
-          # will need a PAT to trigger checks from release-please PRs
-          # https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
-          # token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
+          # need a PAT to trigger checks from release-please PRs
+          # see https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
+          token: ${{ secrets.RELEASE_PLEASE_PAT }}
           target-branch: development
           skip-github-release: true
 
