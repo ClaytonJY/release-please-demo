@@ -6,6 +6,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  checks: read
+  statuses: read
+  actions: read
+  repository-projects: read
 
 jobs:
   deploy-to-dev:
@@ -80,3 +84,13 @@ jobs:
               sleep 5
             fi
           done
+
+      # because we won't be releasing this PR, remove the "autorelease: pending" label
+      # this label prevents release-please from creating subsequent PRs
+      - name: Remove autorelease label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ fromJson(steps.release-please.outputs.pr).number }} \
+            --repo "${{ github.repository }}" \
+            --remove-label "autorelease: pending"
