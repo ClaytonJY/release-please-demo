@@ -18,25 +18,37 @@ jobs:
   deploy-to-dev:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out feature branch
+      - name: Check out the development branch
         uses: actions/checkout@v4
+        with:
+          ref: development
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge head branch into development
+        run: |
+          # we want a new merge commit with
+          # - two parents: development and feature branch tips
+          # - file state identical to tip of feature branch
+
+          git fetch origin ${{ github.ref_name }}:${{ github.ref_name }}
+
+          git merge -s ours --no-commit ${{ github.ref_name }}
+          git checkout ${{ github.ref_name }} -- .
+          git commit -m "ci: Merge branch '${{ github.ref_name }}' into development"
 
       - name: Determine new version tag
         run: |
           # create a "post-release" by appending short commit SHA to existing version
           HEAD_VERSION="$(jq -r '.["."]' .release-please-manifest.json)"
           SHORT_SHA="${GITHUB_SHA::7}"
-          echo "VERSION=${HEAD_VERSION}+${SHORT_SHA}" >> "${GITHUB_ENV}"
+          echo "VERSION=${HEAD_VERSION}-${SHORT_SHA}" >> "${GITHUB_ENV}"
 
-      - name: Check out the development branch
-        uses: actions/checkout@v4
-        with:
-          ref: development
-
-      - name: Create & push Release-As commit on development branch
+      - name: Force new version tag
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit --allow-empty -m "ci: release ${VERSION}" -m "Release-As: ${VERSION}"
           git push
 
@@ -58,11 +70,16 @@ jobs:
       - name: Setup `uv`
         uses: astral-sh/setup-uv@v5
 
-      - name: Update `uv.lock`
+      - name: Update `pyproject.toml` and `uv.lock` with valid versions
         run: |
+          # PEP440 doesn't allow dash suffixes, so we replace with plus
+          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
+          git add pyproject.toml
+
           uv lock
           git add uv.lock
-          git commit -m "ci: update uv.lock"
+
+          git commit -m "ci: correct versions in `pyproject.toml` and `uv.lock`"
           git push
 
       - name: Auto-merge release PR after checks pass
@@ -90,6 +107,7 @@ jobs:
 
       # because we won't be releasing this PR, remove the "autorelease: pending" label
       # this label prevents release-please from creating subsequent PRs
+      # TODO: do this first? put it in a loop?
       - name: Remove autorelease label
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
