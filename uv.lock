@@ -366,7 +366,7 @@ wheels = [
 
 [[package]]
 name = "release-please-demo"
-version = "1.1.0+650dc79"
+version = "1.1.0+2fcd62e"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },
