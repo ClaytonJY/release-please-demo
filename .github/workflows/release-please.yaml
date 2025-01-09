@@ -31,9 +31,6 @@ jobs:
 
       - name: Setup `uv`
         uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          prune-cache: false  # faster on github-hosted runners
 
       - name: Update `uv.lock`
         run: |
@@ -43,3 +40,81 @@ jobs:
           git add uv.lock
           git commit -m "ci: update uv.lock"
           git push
+
+      - name: Checkout staging branch
+        run: |
+          git fetch origin staging:staging
+          git checkout staging
+
+      - name: Merge release branch into staging branch
+        env:
+          RELEASE_BRANCH: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
+        run: |
+          # we want a new merge commit with
+          # - two parents: staging and release branch tips
+          # - file state identical to tip of release branch
+          #
+          # release-please prefers squash merges, but Release-As commits should save us
+
+          git merge -s ours --no-commit ${{ env.RELEASE_BRANCH }}
+          git checkout ${{ env.RELEASE_BRANCH }} -- .
+          git commit -m "ci: Merge branch '${{ env.RELEASE_BRANCH }}' into staging"
+
+      - name: Determine new version tag
+        run: |
+          # create a "pre-release" by appending short commit SHA to version from release branch
+          HEAD_VERSION="$(jq -r '.["."]' .release-please-manifest.json)"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "VERSION=${HEAD_VERSION}-${SHORT_SHA}" >> "${GITHUB_ENV}"
+
+      - name: Force new version tag
+        run: |
+          git commit --allow-empty -m "ci: release ${VERSION}" -m "Release-As: ${VERSION}"
+          git push
+
+      - name: Create release PR to staging branch
+        id: release-please-staging
+        uses: googleapis/release-please-action@v4
+        with:
+          # need a PAT to trigger checks from release-please PRs
+          # see https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
+          token: ${{ secrets.RELEASE_PLEASE_PAT }}
+          target-branch: staging
+          skip-github-release: true
+
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.release-please-staging.outputs.pr).headBranchName }}
+
+      - name: Setup `uv`
+        uses: astral-sh/setup-uv@v5
+
+      - name: Update `pyproject.toml` and `uv.lock` with valid versions
+        run: |
+          # PEP440 doesn't allow dash suffixes, so we replace with plus
+          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
+          git add pyproject.toml
+
+          uv lock
+          git add uv.lock
+
+          git commit -m "ci: correct versions in `pyproject.toml` and `uv.lock`"
+          git push
+
+      # TODO: loop?
+      - name: Remove autorelease label from release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit ${{ fromJson(steps.release-please.outputs.pr).number }} \
+            --repo "${{ github.repository }}" \
+            --remove-label "autorelease: pending"
+
+      - name: Auto-merge release PR after checks pass
+        run: |
+          gh pr merge ${{ fromJson(steps.release-please.outputs.pr).number }} \
+            --repo "${{ github.repository }}" \
+            --squash \
+            --auto \
+            --delete-branch
