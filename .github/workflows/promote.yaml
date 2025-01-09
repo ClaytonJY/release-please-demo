@@ -1,0 +1,90 @@
+name: Promote to Production
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
+  extract-versions:
+    name: Get pre-release and release versions & tags
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease-tag: ${{ steps.extract-versions.outputs.prerelease-tag }}
+      release-tag: ${{ steps.extract-versions.outputs.release-tag }}
+    strategy:
+      matrix:
+        version: [prerelease, release]
+        include:
+          - version: prerelease
+            ref: staging
+          - version: release
+            ref: main
+    steps:
+      - name: Checkout ${{ matrix.ref }} branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+      - name: Extract ${{ matrix.version }} version
+        id: version
+        run: |
+          VERSION=$(jq -r '.["."]' .release-please-manifest.json)
+          echo "VERSION=${VERSION}" >> "${GITHUB_OUTPUT}"
+      - name: Generate docker tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.VERSION }}
+      - name: Rename docker tag
+        run: |
+          echo "${{ matrix.version }}-tag=${{ fromJson(steps.meta.outputs.json).tags[1] }}" >> "${GITHUB_OUTPUT}"
+
+  promote-artifacts:
+    name: Promote prerelease artifacts to full release version
+    needs: extract-versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Promote image
+        run: |
+          docker pull ${{ needs.extract-versions.outputs.prerelease-tag }}
+          docker tag ${{ needs.extract-versions.outputs.prerelease-tag }} ${{ needs.extract-versions.outputs.release-tag }}
+          docker push ${{ needs.extract-versions.outputs.release-tag }}
+
+  update-staging:
+    name: Update staging branch to match main
+    # we could do this parallel to promote-artifacts,
+    # if we think promotion is fast enough to avoid crash loops in staging ArgoCD
+    needs: promote-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staging branch
+        run: |
+          git fetch origin staging:staging
+          git checkout staging
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Merge main into staging
+        run: |
+          git merge -s ours --no-commit main
+          git checkout main -- .
+          git commit -m "ci: Merge branch 'main' into staging"
+          # no Release-As commit needed
+          git push
