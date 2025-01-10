@@ -5,6 +5,7 @@
 
 ### Bug Fixes
 
+* Add missing then statement. ([#44](https://github.com/ClaytonJY/release-please-demo/issues/44)) ([ada5b06](https://github.com/ClaytonJY/release-please-demo/commit/ada5b06b3f1732c931225fa9df3418e47effe48e))
 * Change typo "get" to "git"... ([#37](https://github.com/ClaytonJY/release-please-demo/issues/37)) ([ff4e2c4](https://github.com/ClaytonJY/release-please-demo/commit/ff4e2c45bbf59892f582150abdc210d22d70b72c))
 * Fix second branch reference when fetching release branch. ([#36](https://github.com/ClaytonJY/release-please-demo/issues/36)) ([e8cd3f8](https://github.com/ClaytonJY/release-please-demo/commit/e8cd3f85f7b4c29130e835d2938c661d83db8218))
 * Probe release PR with gh pr view. ([#42](https://github.com/ClaytonJY/release-please-demo/issues/42)) ([d207a9b](https://github.com/ClaytonJY/release-please-demo/commit/d207a9bf425de2f5fc5aaa809bcf9eaaaeb0ec43))
