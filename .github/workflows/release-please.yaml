@@ -145,7 +145,7 @@ jobs:
           # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
           for in in {1..5}; do
              if gh pr view ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
-              --repo "${{ github.repository }}"
+              --repo "${{ github.repository }}"; then
               break
             else
               if [[ $i -eq 5 ]]; then
