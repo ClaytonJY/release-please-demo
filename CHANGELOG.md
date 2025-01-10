@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/ClaytonJY/release-please-demo/compare/v1.2.1...v1.2.2) (2025-01-10)
+
+
+### Bug Fixes
+
+* Fix promote workflow output variables. ([#47](https://github.com/ClaytonJY/release-please-demo/issues/47)) ([afd1102](https://github.com/ClaytonJY/release-please-demo/commit/afd1102837d25f02e6c89bcbf42c21e78bf36b7e))
+
 ## [1.2.1](https://github.com/ClaytonJY/release-please-demo/compare/v1.2.0...v1.2.1) (2025-01-10)
 
 
