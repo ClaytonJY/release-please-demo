@@ -83,7 +83,7 @@ jobs:
           #
           # release-please prefers squash merges, but Release-As commits should save us
 
-          git merge -s ours --no-commit ${{ env.RELEASE_BRANCH }}
+          git merge -s ours --no-commit --allow-unrelated-histories ${{ env.RELEASE_BRANCH }}
           git checkout ${{ env.RELEASE_BRANCH }} -- .
           git commit -m "ci: Merge branch '${{ env.RELEASE_BRANCH }}' into staging"
 
