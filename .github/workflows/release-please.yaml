@@ -139,23 +139,6 @@ jobs:
           git commit -m "ci: correct versions in `pyproject.toml` and `uv.lock`"
           git push
 
-      - name: Poll release PR until it's visible to API
-        run: |
-          # github pr edits tend to fail initially, so we try a few times in a loop
-          # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
-          for in in {1..5}; do
-             if gh pr view ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
-              --repo "${{ github.repository }}"; then
-              break
-            else
-              if [[ $i -eq 5 ]]; then
-                echo "Failed to view release PR after 5 attempts"
-                exit 1
-              fi
-              sleep 2
-            fi
-          done
-
       - name: Remove autorelease label from release PR
         run: |
           gh pr edit ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
@@ -164,8 +147,20 @@ jobs:
 
       - name: Auto-merge release PR after checks pass
         run: |
-          gh pr merge ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
-            --repo "${{ github.repository }}" \
-            --squash \
-            --auto \
-            --delete-branch
+          # github pr edits tend to fail initially, so we try a few times in a loop
+          # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
+          for in in {1..5}; do
+             if gh pr merge ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
+              --repo "${{ github.repository }}" \
+              --squash \
+              --auto \
+              --delete-branch; then
+              break
+            else
+              if [[ $i -eq 5 ]]; then
+                echo "Failed to view release PR after 5 attempts"
+                exit 1
+              fi
+              sleep 3
+            fi
+          done
