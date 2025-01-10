@@ -36,7 +36,7 @@ jobs:
 
           git fetch origin ${{ github.ref_name }}:${{ github.ref_name }}
 
-          git merge -s ours --no-commit ${{ github.ref_name }}
+          git merge -s ours --no-commit --allow-unrelated-histories ${{ github.ref_name }}
           git checkout ${{ github.ref_name }} -- .
           git commit -m "ci: Merge branch '${{ github.ref_name }}' into development"
 
