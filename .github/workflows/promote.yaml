@@ -20,15 +20,15 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
-      prerelease-tag: ${{ steps.version.outputs.prerelease-tag }}
-      release-tag: ${{ steps.version.outputs.release-tag }}
+      PRERELEASE_TAG: ${{ steps.version.outputs.prerelease-tag }}
+      RELEASE_TAG: ${{ steps.version.outputs.release-tag }}
     strategy:
       matrix:
-        version: [prerelease, release]
+        version: [PRERELEASE, RELEASE]
         include:
-          - version: prerelease
+          - version: PRERELEASE
             ref: staging
-          - version: release
+          - version: RELEASE
             ref: main
     steps:
       - name: Checkout ${{ matrix.ref }} branch
@@ -49,7 +49,7 @@ jobs:
             type=semver,pattern={{version}},value=${{ steps.version.outputs.VERSION }}
       - name: Rename docker tag
         run: |
-          echo "${{ matrix.version }}-tag=${{ fromJson(steps.meta.outputs.json).tags[1] }}" >> "${GITHUB_OUTPUT}"
+          echo "${{ matrix.version }}_TAG=${{ fromJson(steps.meta.outputs.json).tags[0] }}" >> "${GITHUB_OUTPUT}"
 
   promote-artifacts:
     name: Promote prerelease artifacts to full release version
@@ -64,9 +64,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Promote image
         run: |
-          docker pull ${{ needs.extract-versions.outputs.prerelease-tag }}
-          docker tag ${{ needs.extract-versions.outputs.prerelease-tag }} ${{ needs.extract-versions.outputs.release-tag }}
-          docker push ${{ needs.extract-versions.outputs.release-tag }}
+          docker pull ${{ needs.extract-versions.outputs.PRERELEASE_TAG }}
+          docker tag ${{ needs.extract-versions.outputs.PRERELEASE_TAG }} ${{ needs.extract-versions.outputs.RELEASE_TAG }}
+          docker push ${{ needs.extract-versions.outputs.RELEASE_TAG }}
 
   update-staging:
     name: Update staging branch to match main
