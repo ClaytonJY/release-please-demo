@@ -9,6 +9,13 @@ permissions:
   contents: write
   pull-requests: write
 
+  # need a lot to edit PRs to remove label
+  # see https://github.com/cli/cli/issues/6274#issuecomment-2439692639
+  checks: read
+  statuses: read
+  actions: read
+  repository-projects: read
+
 jobs:
   create-release-pr:
     # create or update a release PR on main
@@ -64,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_BRANCH: ${{ fromJson(needs.create-release-pr.outputs.pr).headBranchName }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout staging branch
         uses: actions/checkout@v4
@@ -131,25 +139,28 @@ jobs:
           git commit -m "ci: correct versions in `pyproject.toml` and `uv.lock`"
           git push
 
-      - name: Remove autorelease label from release PR
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Poll release PR until it's visible to API
         run: |
           # github pr edits tend to fail initially, so we try a few times in a loop
           # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
-          for in in {1..3}; do
-             if gh pr edit ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
-              --repo "${{ github.repository }}" \
-              --remove-label "autorelease: pending"; then
+          for in in {1..5}; do
+             if gh pr view ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
+              --repo "${{ github.repository }}"
               break
             else
-              if [[ $i -eq 3 ]]; then
-                echo "Failed to remove autorelease label from PR"
+              if [[ $i -eq 5 ]]; then
+                echo "Failed to view release PR after 5 attempts"
                 exit 1
               fi
-              sleep 5
+              sleep 2
             fi
           done
+
+      - name: Remove autorelease label from release PR
+        run: |
+          gh pr edit ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
+            --repo "${{ github.repository }}" \
+            --remove-label "autorelease: pending"
 
       - name: Auto-merge release PR after checks pass
         run: |

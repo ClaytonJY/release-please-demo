@@ -7,6 +7,7 @@
 
 * Change typo "get" to "git"... ([#37](https://github.com/ClaytonJY/release-please-demo/issues/37)) ([ff4e2c4](https://github.com/ClaytonJY/release-please-demo/commit/ff4e2c45bbf59892f582150abdc210d22d70b72c))
 * Fix second branch reference when fetching release branch. ([#36](https://github.com/ClaytonJY/release-please-demo/issues/36)) ([e8cd3f8](https://github.com/ClaytonJY/release-please-demo/commit/e8cd3f85f7b4c29130e835d2938c661d83db8218))
+* Probe release PR with gh pr view. ([#42](https://github.com/ClaytonJY/release-please-demo/issues/42)) ([d207a9b](https://github.com/ClaytonJY/release-please-demo/commit/d207a9bf425de2f5fc5aaa809bcf9eaaaeb0ec43))
 * Try the label removal in a loop. ([#39](https://github.com/ClaytonJY/release-please-demo/issues/39)) ([c4b595c](https://github.com/ClaytonJY/release-please-demo/commit/c4b595cb7a9e953b48971a5057d40fd44dc54ed2))
 * Use correct step names when defining outputs in promote workflow. ([#33](https://github.com/ClaytonJY/release-please-demo/issues/33)) ([0aa7902](https://github.com/ClaytonJY/release-please-demo/commit/0aa7902fe217993ade82159466990f32bab66da8))
 
