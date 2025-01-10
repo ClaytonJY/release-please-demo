@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0-fa14a52](https://github.com/ClaytonJY/release-please-demo/compare/v1.1.0...v1.1.0-fa14a52) (2025-01-10)
+## [1.2.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.1.0...v1.2.0) (2025-01-10)
 
 
 ### Features
@@ -12,12 +12,6 @@
 
 * Configure git user/email before using git in release workflow. ([#14](https://github.com/ClaytonJY/release-please-demo/issues/14)) ([8f765a7](https://github.com/ClaytonJY/release-please-demo/commit/8f765a79b76170cb3bd648b924e09e0530d7514a))
 * update uv lock ([#11](https://github.com/ClaytonJY/release-please-demo/issues/11)) ([ccfcf25](https://github.com/ClaytonJY/release-please-demo/commit/ccfcf25372e1e5d39cf4e6c75539add0bfd39061))
-
-
-### Continuous Integration
-
-* release 1.1.0-7687a6e ([a821b5b](https://github.com/ClaytonJY/release-please-demo/commit/a821b5b467c313a9f0ab54f866f795f3e77f1d9d))
-* release 1.1.0-fa14a52 ([b1cda98](https://github.com/ClaytonJY/release-please-demo/commit/b1cda98361b9bf638f139bd741eb8c0d61e6f630))
 
 ## [1.1.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.0.0...v1.1.0) (2024-12-26)
 
