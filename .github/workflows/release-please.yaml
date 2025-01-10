@@ -10,9 +10,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  release-pr:
+  create-release-pr:
+    # create or update a release PR on main
+    # this will be a no-op if version doesn't need bumping
     name: Create Release PR
     runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.release-please.outputs.pr }}
     steps:
       - name: Create PR with release-please
         id: release-please
@@ -22,12 +26,25 @@ jobs:
           # https://github.com/googleapis/release-please-action?tab=readme-ov-file#github-credentials
           # token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
 
-      # release-please is unable to update uv.lock, so we do it ourselves
-
+  update-release-pr:
+    # release-please can't update uv.lock, so we do it ourselves
+    # this won't run if create-release-pr was a no-op
+    name: Update Release PR
+    needs: create-release-pr
+    if: needs.create-release-pr.outputs.pr != ''
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ fromJson(needs.create-release-pr.outputs.pr).headBranchName }}
+    steps:
       - name: Checkout release branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
+          ref: ${{ env.RELEASE_BRANCH }}
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Setup `uv`
         uses: astral-sh/setup-uv@v5
@@ -35,20 +52,30 @@ jobs:
       - name: Update `uv.lock`
         run: |
           uv lock
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add uv.lock
           git commit -m "ci: update uv.lock"
           git push
 
+  update-staging:
+    name: Update staging branch to match release PR, plus version override
+    needs:
+      - create-release-pr
+      - update-release-pr
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_BRANCH: ${{ fromJson(needs.create-release-pr.outputs.pr).headBranchName }}
+    steps:
       - name: Checkout staging branch
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Configure git user
         run: |
-          git fetch origin staging:staging
-          git checkout staging
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Merge release branch into staging branch
-        env:
-          RELEASE_BRANCH: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
         run: |
           # we want a new merge commit with
           # - two parents: staging and release branch tips
@@ -63,11 +90,12 @@ jobs:
       - name: Determine new version tag
         run: |
           # create a "pre-release" by appending short commit SHA to version from release branch
+          # the GITHUB_SHA is the tip of main (not staging or release branch)
           HEAD_VERSION="$(jq -r '.["."]' .release-please-manifest.json)"
           SHORT_SHA="${GITHUB_SHA::7}"
           echo "VERSION=${HEAD_VERSION}-${SHORT_SHA}" >> "${GITHUB_ENV}"
 
-      - name: Force new version tag
+      - name: Force new version tag & push
         run: |
           git commit --allow-empty -m "ci: release ${VERSION}" -m "Release-As: ${VERSION}"
           git push
@@ -107,13 +135,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr edit ${{ fromJson(steps.release-please.outputs.pr).number }} \
+          gh pr edit ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
             --repo "${{ github.repository }}" \
             --remove-label "autorelease: pending"
 
       - name: Auto-merge release PR after checks pass
         run: |
-          gh pr merge ${{ fromJson(steps.release-please.outputs.pr).number }} \
+          gh pr merge ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
             --repo "${{ github.repository }}" \
             --squash \
             --auto \
