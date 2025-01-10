@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0-77fef75](https://github.com/ClaytonJY/release-please-demo/compare/v1.2.0...v1.2.0-77fef75) (2025-01-10)
+
+
+### Continuous Integration
+
+* release 1.2.0-77fef75 ([79063f1](https://github.com/ClaytonJY/release-please-demo/commit/79063f174bf7e5dbf716ca444726745ae78dded4))
+
 ## [1.2.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.1.0...v1.2.0) (2025-01-10)
 
 
