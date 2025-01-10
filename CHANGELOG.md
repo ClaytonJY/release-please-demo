@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.1](https://github.com/ClaytonJY/release-please-demo/compare/v1.2.0...v1.2.1) (2025-01-10)
+
+
+### Bug Fixes
+
+* Change typo "get" to "git"... ([#37](https://github.com/ClaytonJY/release-please-demo/issues/37)) ([ff4e2c4](https://github.com/ClaytonJY/release-please-demo/commit/ff4e2c45bbf59892f582150abdc210d22d70b72c))
+* Fix second branch reference when fetching release branch. ([#36](https://github.com/ClaytonJY/release-please-demo/issues/36)) ([e8cd3f8](https://github.com/ClaytonJY/release-please-demo/commit/e8cd3f85f7b4c29130e835d2938c661d83db8218))
+* Use correct step names when defining outputs in promote workflow. ([#33](https://github.com/ClaytonJY/release-please-demo/issues/33)) ([0aa7902](https://github.com/ClaytonJY/release-please-demo/commit/0aa7902fe217993ade82159466990f32bab66da8))
+
 ## [1.2.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.1.0...v1.2.0) (2025-01-10)
 
 
