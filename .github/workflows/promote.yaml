@@ -6,6 +6,8 @@ on:
       - main
     types:
       - closed
+    paths:
+      - '.release-please-manifest.json'  # only promote if version changed, i.e. for release PRs
 
 permissions:
   contents: read
