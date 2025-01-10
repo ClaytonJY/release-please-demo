@@ -20,8 +20,8 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
-      PRERELEASE_TAG: ${{ steps.version.outputs.prerelease-tag }}
-      RELEASE_TAG: ${{ steps.version.outputs.release-tag }}
+      PRERELEASE_TAG: ${{ steps.version.outputs.PRERELEASE_TAG }}
+      RELEASE_TAG: ${{ steps.version.outputs.RELEASE_TAG }}
     strategy:
       matrix:
         version: [PRERELEASE, RELEASE]
