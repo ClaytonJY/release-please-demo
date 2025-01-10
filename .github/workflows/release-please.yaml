@@ -9,6 +9,13 @@ permissions:
   contents: write
   pull-requests: write
 
+  # need a lot to edit PRs to remove label
+  # see https://github.com/cli/cli/issues/6274#issuecomment-2439692639
+  checks: read
+  statuses: read
+  actions: read
+  repository-projects: read
+
 jobs:
   create-release-pr:
     # create or update a release PR on main
@@ -152,6 +159,8 @@ jobs:
           done
 
       - name: Auto-merge release PR after checks pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr merge ${{ fromJson(steps.release-please-staging.outputs.pr).number }} \
             --repo "${{ github.repository }}" \
