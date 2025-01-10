@@ -6,6 +6,8 @@ on:
       - main
     types:
       - closed
+    paths:
+      - '.release-please-manifest.json'  # only promote if version changed, i.e. for release PRs
 
 permissions:
   contents: read
@@ -18,8 +20,8 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
-      prerelease-tag: ${{ steps.extract-versions.outputs.prerelease-tag }}
-      release-tag: ${{ steps.extract-versions.outputs.release-tag }}
+      prerelease-tag: ${{ steps.version.outputs.prerelease-tag }}
+      release-tag: ${{ steps.version.outputs.release-tag }}
     strategy:
       matrix:
         version: [prerelease, release]

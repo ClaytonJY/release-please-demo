@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.1](https://github.com/ClaytonJY/release-please-demo/compare/v1.2.0...v1.2.1) (2025-01-10)
+
+
+### Bug Fixes
+
+* Change typo "get" to "git"... ([#37](https://github.com/ClaytonJY/release-please-demo/issues/37)) ([ff4e2c4](https://github.com/ClaytonJY/release-please-demo/commit/ff4e2c45bbf59892f582150abdc210d22d70b72c))
+* Fix second branch reference when fetching release branch. ([#36](https://github.com/ClaytonJY/release-please-demo/issues/36)) ([e8cd3f8](https://github.com/ClaytonJY/release-please-demo/commit/e8cd3f85f7b4c29130e835d2938c661d83db8218))
+* Use correct step names when defining outputs in promote workflow. ([#33](https://github.com/ClaytonJY/release-please-demo/issues/33)) ([0aa7902](https://github.com/ClaytonJY/release-please-demo/commit/0aa7902fe217993ade82159466990f32bab66da8))
+
+## [1.2.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.1.0...v1.2.0) (2025-01-10)
+
+
+### Features
+
+* Update lockfile via commit rather than extra-files. ([#13](https://github.com/ClaytonJY/release-please-demo/issues/13)) ([c47de50](https://github.com/ClaytonJY/release-please-demo/commit/c47de50d7e6db9c04908e7301692cc93e702106d))
+
+
+### Bug Fixes
+
+* Configure git user/email before using git in release workflow. ([#14](https://github.com/ClaytonJY/release-please-demo/issues/14)) ([8f765a7](https://github.com/ClaytonJY/release-please-demo/commit/8f765a79b76170cb3bd648b924e09e0530d7514a))
+* update uv lock ([#11](https://github.com/ClaytonJY/release-please-demo/issues/11)) ([ccfcf25](https://github.com/ClaytonJY/release-please-demo/commit/ccfcf25372e1e5d39cf4e6c75539add0bfd39061))
+
 ## [1.1.0](https://github.com/ClaytonJY/release-please-demo/compare/v1.0.0...v1.1.0) (2024-12-26)
 
 
