@@ -1,6 +1,15 @@
 {
   "packages": {
-    ".": {
+    "helm": {
+      "changelog-path": "helm/CHANGELOG.md",
+      "release-type": "helm",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "draft": false,
+      "prerelease": false
+
+    },
+    "api": {
       "changelog-path": "CHANGELOG.md",
       "release-type": "python",
       "bump-minor-pre-major": false,
