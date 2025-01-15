@@ -46,121 +46,121 @@ jobs:
           target-branch: ${{ inputs.target-branch }}
           skip-github-release: ${{ inputs.target-branch != 'main' }}
 
-  update-release-pr:
-    name: Update Release PR
-    # Various updates are needed on release PRs to account for our tooling/approach
-    runs-on: ubuntu-latest
-    needs: release-please
-    # skip this job if the release-please PR wasn't created nor updated
-    if: needs.release-please.outputs.pr != ''
-    env:
-      RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
-    steps:
-      - name: Checkout base branch ${{ inputs.target-branch }}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.target-branch }}
+  # update-release-pr:
+  #   name: Update Release PR
+  #   # Various updates are needed on release PRs to account for our tooling/approach
+  #   runs-on: ubuntu-latest
+  #   needs: release-please
+  #   # skip this job if the release-please PR wasn't created nor updated
+  #   if: needs.release-please.outputs.pr != ''
+  #   env:
+  #     RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
+  #   steps:
+  #     - name: Checkout base branch ${{ inputs.target-branch }}
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ inputs.target-branch }}
 
-      - name: Save base manifest
-        run: |
-          BASE_MANIFEST_JSON=$(jq -c '.' .release-please-manifest.json)
-          echo "BASE_MANIFEST_JSON=${BASE_MANIFEST_JSON}" >> "${GITHUB_ENV}"
+  #     - name: Save base manifest
+  #       run: |
+  #         BASE_MANIFEST_JSON=$(jq -c '.' .release-please-manifest.json)
+  #         echo "BASE_MANIFEST_JSON=${BASE_MANIFEST_JSON}" >> "${GITHUB_ENV}"
 
-      - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
+  #     - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ env.RELEASE_BRANCH }}
 
-      - name: Bump helm patch version, if necessary
-        run: |
-          BUMP_HELM=$(
-            jq \
-              --argjson base "$BASE_MANIFEST_JSON" \
-              --slurpfile pr .release-please-manifest.json \
-              -n '
-                ($base | keys)
-                | map(select($base[.] != $pr[0][.]))
-                | (length > 0 and (index("helm") == null))
-              '
-          )
-          if [[ $BUMP_HELM == "true" ]]; then
-            echo "Bumping Helm version..."
+  #     - name: Bump helm patch version, if necessary
+  #       run: |
+  #         BUMP_HELM=$(
+  #           jq \
+  #             --argjson base "$BASE_MANIFEST_JSON" \
+  #             --slurpfile pr .release-please-manifest.json \
+  #             -n '
+  #               ($base | keys)
+  #               | map(select($base[.] != $pr[0][.]))
+  #               | (length > 0 and (index("helm") == null))
+  #             '
+  #         )
+  #         if [[ $BUMP_HELM == "true" ]]; then
+  #           echo "Bumping Helm version..."
 
-            CURRENT_VERSION=$(jq -r '.["helm"]' .release-please-manifest.json)
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-            NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+  #           CURRENT_VERSION=$(jq -r '.["helm"]' .release-please-manifest.json)
+  #           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+  #           NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
 
-            # jq can't edit in-place, so we write to a temp file and move it back
-            jq --arg new_version "$NEW_VERSION" '.["helm"] = $new_version' \
-              .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
+  #           # jq can't edit in-place, so we write to a temp file and move it back
+  #           jq --arg new_version "$NEW_VERSION" '.["helm"] = $new_version' \
+  #             .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
 
-            sed -i "s/^version: .*/version: $NEW_VERSION/" helm/Chart.yaml
+  #           sed -i "s/^version: .*/version: $NEW_VERSION/" helm/Chart.yaml
 
-            echo "Updated Helm version to $NEW_VERSION"
-          else
-            echo "No need to bump Helm version"
-          fi
+  #           echo "Updated Helm version to $NEW_VERSION"
+  #         else
+  #           echo "No need to bump Helm version"
+  #         fi
 
 
-      - name: Setup `uv`
-        uses: astral-sh/setup-uv@v5
+  #     - name: Setup `uv`
+  #       uses: astral-sh/setup-uv@v5
 
-      - name: Fix pyproject version
-        # PEP440 disallows dash-suffixes, so we replace with plus (1.2.3-abcd123 -> 1.2.3+abcd123)
-        # no-op for release versions (1.2.3 -> 1.2.3)
-        run: |
-          cd api  # TODO: generalize
-          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
-          uv lock
+  #     - name: Fix pyproject version
+  #       # PEP440 disallows dash-suffixes, so we replace with plus (1.2.3-abcd123 -> 1.2.3+abcd123)
+  #       # no-op for release versions (1.2.3 -> 1.2.3)
+  #       run: |
+  #         cd api  # TODO: generalize
+  #         sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
+  #         uv lock
 
-      - name: Configure git user
-        uses: ./.github/actions/git-config-user
+  #     - name: Configure git user
+  #       uses: ./.github/actions/git-config-user
 
-      - name: Commit and push any changed files
-        run: |
-          git add -u
-          if ! git diff-index --cached --quiet HEAD; then
-            git commit -m "ci: post-release-please updates"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+  #     - name: Commit and push any changed files
+  #       run: |
+  #         git add -u
+  #         if ! git diff-index --cached --quiet HEAD; then
+  #           git commit -m "ci: post-release-please updates"
+  #           git push
+  #         else
+  #           echo "No changes to commit"
+  #         fi
 
-  automerge-release-pr:
-    name: Auto-merge release PR after checks pass
-    # used when releasing to a non-main environment branch like `staging` or `production`
-    runs-on: ubuntu-latest
-    needs:
-      - release-please
-      - update-release-pr
-    if: ${{ inputs.target-branch != 'main'}}
-    env:
-      PR_NUMBER: ${{ fromJson(needs.release-please.outputs.pr).number }}
-    steps:
-      - name: Remove autorelease label from release PR
-        # if we aren't going to release this PR, remove the "autorelease: pending" label
-        # as it will cause issues otherwise
-        run: |
-          gh pr edit ${{ env.PR_NUMBER }} \
-            --repo "${{ github.repository }}" \
-            --remove-label "autorelease: pending"
+  # automerge-release-pr:
+  #   name: Auto-merge release PR after checks pass
+  #   # used when releasing to a non-main environment branch like `staging` or `production`
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - release-please
+  #     - update-release-pr
+  #   if: ${{ inputs.target-branch != 'main'}}
+  #   env:
+  #     PR_NUMBER: ${{ fromJson(needs.release-please.outputs.pr).number }}
+  #   steps:
+  #     - name: Remove autorelease label from release PR
+  #       # if we aren't going to release this PR, remove the "autorelease: pending" label
+  #       # as it will cause issues otherwise
+  #       run: |
+  #         gh pr edit ${{ env.PR_NUMBER }} \
+  #           --repo "${{ github.repository }}" \
+  #           --remove-label "autorelease: pending"
 
-      - name: Auto-merge release PR after checks pass
-        # github pr edits tend to fail initially, so we try a few times in a loop
-        # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
-        run: |
-          for in in {1..5}; do
-             if gh pr merge ${{ env.PR_NUMBER }} \
-              --repo "${{ github.repository }}" \
-              --squash \
-              --auto \
-              --delete-branch; then
-              break
-            else
-              if [[ $i -eq 5 ]]; then
-                echo "Failed to edit release PR after 5 attempts"
-                exit 1
-              fi
-              sleep 3
-            fi
-          done
+  #     - name: Auto-merge release PR after checks pass
+  #       # github pr edits tend to fail initially, so we try a few times in a loop
+  #       # see https://github.com/cli/cli/issues/8092#issuecomment-1743904069
+  #       run: |
+  #         for in in {1..5}; do
+  #            if gh pr merge ${{ env.PR_NUMBER }} \
+  #             --repo "${{ github.repository }}" \
+  #             --squash \
+  #             --auto \
+  #             --delete-branch; then
+  #             break
+  #           else
+  #             if [[ $i -eq 5 ]]; then
+  #               echo "Failed to edit release PR after 5 attempts"
+  #               exit 1
+  #             fi
+  #             sleep 3
+  #           fi
+  #         done

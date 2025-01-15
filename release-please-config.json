@@ -1,27 +1,20 @@
 {
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "always-update": true,
+
+  "bootstrap-sha": "3a837b64bb25b7ea3af89e269a46539cf673c2e5",
+
   "packages": {
     "helm": {
-      "changelog-path": "CHANGELOG.md",
       "release-type": "helm",
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
-      "draft": false,
-      "prerelease": false
+      "package-name": "chart",
+      "initial-version": "0.1.0"
     },
     "api": {
-      "changelog-path": "CHANGELOG.md",
       "release-type": "python",
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
-      "draft": false,
-      "prerelease": false,
-      "extra-files": [
-        {
-          "type": "yaml",
-          "path": "helm/values.yaml",
-          "jsonpath": "$.versions.api"
-        }
-      ]
+      "package-name": "api",
+      "initial-version": "0.1.0"
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
