@@ -75,7 +75,7 @@ jobs:
         run: |
           BUMP_HELM=$(
             jq \
-              --argjson base "$BASE_MANIFEST" \
+              --argjson base "$BASE_MANIFEST_JSON" \
               --slurpfile pr fake-manifest.json \
               -n '
                 ($base | keys)
