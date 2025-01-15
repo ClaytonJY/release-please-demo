@@ -118,8 +118,8 @@ jobs:
 
       - name: Commit and push any changed files
         run: |
-          if ! git diff-index --quiet HEAD --; then
-            git add -u
+          git add -u
+          if ! git diff-index --cached --quiet HEAD; then
             git commit -m "ci: post-release-please updates"
             git push
           else
