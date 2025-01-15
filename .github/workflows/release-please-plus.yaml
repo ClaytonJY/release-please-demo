@@ -108,11 +108,10 @@ jobs:
       - name: Fix pyproject version
         # PEP440 disallows dash-suffixes, so we replace with plus (1.2.3-abcd123 -> 1.2.3+abcd123)
         # no-op for release versions (1.2.3 -> 1.2.3)
-        run: sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
-
-      - name: Update `uv.lock`
-        run: uv lock
-
+        run: |
+          cd api  # TODO: generalize
+          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
+          uv lock
 
       - name: Configure git user
         uses: ./.github/actions/git-config-user
