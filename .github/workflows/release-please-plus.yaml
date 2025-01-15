@@ -42,7 +42,7 @@ jobs:
         id: release-please
         uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.personal_access_token }}
+          token: ${{ secrets.pat }}
           target-branch: ${{ inputs.target-branch }}
           skip-github-release: ${{ inputs.target-branch != 'main' }}
 
