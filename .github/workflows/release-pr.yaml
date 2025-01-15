@@ -19,5 +19,5 @@ jobs:
     uses: ./.github/workflows/release-please-plus.yaml
     with:
       target-branch: main
-    # secrets:
-    #   pat: ${{ secrets.RELEASE_PLEASE_PAT }}
+    secrets:
+      pat: ${{ secrets.RELEASE_PLEASE_PAT }}

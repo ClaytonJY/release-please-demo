@@ -10,10 +10,10 @@ on:
         type: string
         required: false
         default: "main"
-    # secrets:
-    #   pat:
-    #     description: "A personal access token that can create commits and PRs"
-    #     required: true
+    secrets:
+      pat:
+        description: "A personal access token that can create commits and PRs"
+        required: true
     outputs:
       pr:
         description: "JSON pull-request object from release-please"
@@ -42,7 +42,7 @@ jobs:
         id: release-please
         uses: googleapis/release-please-action@v4
         with:
-          # token: ${{ secrets.pat }}
+          token: ${{ secrets.pat }}
           target-branch: ${{ inputs.target-branch }}
           skip-github-release: ${{ inputs.target-branch != 'main' }}
 
