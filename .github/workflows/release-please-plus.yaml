@@ -76,7 +76,7 @@ jobs:
           BUMP_HELM=$(
             jq \
               --argjson base "$BASE_MANIFEST_JSON" \
-              --slurpfile pr fake-manifest.json \
+              --slurpfile pr .release-please-manifest.json \
               -n '
                 ($base | keys)
                 | map(select($base[.] != $pr[0][.]))
