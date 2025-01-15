@@ -1,0 +1,11 @@
+name: "Configure git user"
+description: "Configures git client with github bot user"
+runs:
+  using: "composite"
+  steps:
+    - name: "Configure git user"
+      shell: bash
+      # we could consider making this something Abridge-specific?
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
