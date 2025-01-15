@@ -1,0 +1,25 @@
+name: Create Release PR with release-please
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      # don't run on commits created by this workflow
+      - '.release-please-manifest.json'
+      - '**/CHANGELOG.md'
+      - 'helm/Chart.yaml'
+      - '**/pyproject.toml'
+      - '**/uv.lock'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  release-please-plus:
+    uses: ./.github/workflows/release-please-plus.yaml
+    with:
+      target-branch: main
+    secrets:
+      pat: ${{ secrets.RELEASE_PLEASE_PAT }}
