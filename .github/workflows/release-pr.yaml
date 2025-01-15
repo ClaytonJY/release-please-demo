@@ -1,7 +1,7 @@
 name: Create Release PR with release-please
 
 on:
-  pull_request:
+  push:
     branches:
       - main
     paths-ignore:
