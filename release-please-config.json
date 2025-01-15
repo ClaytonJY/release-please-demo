@@ -1,7 +1,7 @@
 {
   "packages": {
     "helm": {
-      "changelog-path": "helm/CHANGELOG.md",
+      "changelog-path": "CHANGELOG.md",
       "release-type": "helm",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
