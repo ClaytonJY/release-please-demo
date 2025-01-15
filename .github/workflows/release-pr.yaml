@@ -4,13 +4,7 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      # don't run on commits created by this workflow
-      - '.release-please-manifest.json'
-      - '**/CHANGELOG.md'
-      - 'helm/Chart.yaml'
-      - '**/pyproject.toml'
-      - '**/uv.lock'
+  workflow_dispatch:  # just in case
 
 permissions:
   contents: write
