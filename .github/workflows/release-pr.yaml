@@ -13,8 +13,12 @@ on:
       - '**/uv.lock'
 
 permissions:
-  contents: read
-  pull-requests: read
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+  actions: read
+  repository-projects: read
 
 jobs:
   release-please-plus:
