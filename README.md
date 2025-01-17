@@ -1,18 +1,28 @@
 # `release-please` demo
 
-Testing out release-please for CI workflows.
+Demo of a [`release-please`](https://github.com/googleapis/release-please) workflow in a Helm-based monorepo, with support for `uv`-based python packages.
 
 ## TODO
 
-- [ ] build (and push?) pre-release artifacts from non-release PRs
-- [ ] promote artifacts from release PRs
-- [ ] push to staging branch from release PRs
-- [ ] push to staging and prod branches from release PRs
-- [ ] enforce conventional commit syntax in PR titles
-- [ ] branch protection rules for main/staging/prod
-- [ ] link example PRs in README
-- [ ] add another component
-- [ ] try multi-component PRs
+- [x] api-only release
+- [ ] helm-only release
+
+- Release
+  - [ ] use extra-files to bump api version reference in helm chart
+  - [ ] wrap release-please to update `uv.lock`
+  - [ ] wrap release-please to patch bump chart when api updates
+- Staging
+  - [ ] build/push pre-release artifacts from release PRs
+  - [ ] update staging branch when release PR's opened/updated/merged
+- Prod
+  - [ ] promote artifacts when release PR merged
+  - [ ] update production branch
+- Dev
+  - [ ] build/push pre-prerelease artifacts from PR? manual workflow?
+  - [ ] update dev branch
+- Process
+  - [ ] enforce Conventional Commits
+  - [ ] branch protection rules (once public)
 
 ## Tips
 
