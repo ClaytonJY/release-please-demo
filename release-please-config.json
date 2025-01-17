@@ -14,7 +14,14 @@
     "api": {
       "release-type": "python",
       "package-name": "api",
-      "initial-version": "0.1.0"
+      "initial-version": "0.1.0",
+      "extra-files": [
+        {
+          "path": "../helm/values.yaml",
+          "type": "yaml",
+          "jsonpath": "$.versions.api"
+        }
+      ]
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
