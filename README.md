@@ -5,7 +5,7 @@ Demo of a [`release-please`](https://github.com/googleapis/release-please) workf
 ## TODO
 
 - [x] api-only release
-- [ ] helm-only release
+- [x] helm-only release
 
 - Release
   - [ ] use extra-files to bump api version reference in helm chart
