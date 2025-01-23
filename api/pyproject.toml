@@ -1,6 +1,6 @@
 [project]
 name = "release-please-demo"
-version = "0.1.1"
+version = "0.1.2"
 description = "Experimenting with release-please."
 readme = "README.md"
 requires-python = ">=3.12"
