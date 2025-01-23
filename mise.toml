@@ -1,4 +1,7 @@
 [tools]
 helm = "latest"
 "npm:release-please" = "latest"
-uv = "latest"
+
+# uv didn't update lockfiles for versions > 0.5.18 and < 0.5.23
+# see https://github.com/astral-sh/uv/issues/10852
+uv = "0.5.23"

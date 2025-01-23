@@ -101,9 +101,11 @@ jobs:
       #       echo "No need to bump Helm version"
       #     fi
 
-
+      # TODO: use mise instead
       - name: Setup `uv`
         uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.5.23"
 
       - name: Fix pyproject version
         # PEP440 disallows dash-suffixes, so we replace with plus (1.2.3-abcd123 -> 1.2.3+abcd123)
