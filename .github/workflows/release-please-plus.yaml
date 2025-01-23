@@ -115,6 +115,14 @@ jobs:
           sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
           uv lock
 
+      - name: Fix tag references in helm chart
+        run: |
+          # TODO: use toml-cli or python
+          VERSION=$(grep '^version\s*=' api/pyproject.toml | cut -d '"' -f2)
+
+          # TODO: use yq instead
+          sed -i "s/^\(  api:\).*/\1 ${VERSION}/" helm/values.yaml
+
       - name: Configure git user
         uses: ./.github/actions/git-config-user
 
