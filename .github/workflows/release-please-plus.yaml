@@ -56,50 +56,52 @@ jobs:
     env:
       RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
     steps:
-      # - name: Checkout base branch ${{ inputs.target-branch }}
-      #   uses: actions/checkout@v4
-      #   with:
-      #     ref: ${{ inputs.target-branch }}
-
-      # - name: Save base manifest
-      #   run: |
-      #     BASE_MANIFEST_JSON=$(jq -c '.' .release-please-manifest.json)
-      #     echo "BASE_MANIFEST_JSON=${BASE_MANIFEST_JSON}" >> "${GITHUB_ENV}"
-
       - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
         uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
 
-      # - name: Bump helm patch version, if necessary
-      #   run: |
-      #     BUMP_HELM=$(
-      #       jq \
-      #         --argjson base "$BASE_MANIFEST_JSON" \
-      #         --slurpfile pr .release-please-manifest.json \
-      #         -n '
-      #           ($base | keys)
-      #           | map(select($base[.] != $pr[0][.]))
-      #           | (length > 0 and (index("helm") == null))
-      #         '
-      #     )
-      #     if [[ $BUMP_HELM == "true" ]]; then
-      #       echo "Bumping Helm version..."
+      - name: Determine which packages changed
+        id: check
+        run: |
+          # fetch old manifest directly from target branch
+          git fetch --no-tags --prune --depth=1 origin ${{ inputs.target-branch }}
+          old_manifest="$(git show origin/${{ inputs.target-branch }}:.release-please-manifest.json || echo '{}')"
 
-      #       CURRENT_VERSION=$(jq -r '.["helm"]' .release-please-manifest.json)
-      #       IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-      #       NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          new_manifest="$(cat .release-please-manifest.json)"
 
-      #       # jq can't edit in-place, so we write to a temp file and move it back
-      #       jq --arg new_version "$NEW_VERSION" '.["helm"] = $new_version' \
-      #         .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
+          # build an object of bumped packages with their version, e.g.
+          #    {
+          #      "some-package": "1.2.3",
+          #      "another-package": "4.5.6"
+          #    }
+          changed_packages="$(jq --argjson old "$old_manifest" --argjson new "$new_manifest" -c -n '
+            $new | with_entries(select(.value != ($old[.key])))
+          ')"
 
-      #       sed -i "s/^version: .*/version: $NEW_VERSION/" helm/Chart.yaml
+          echo "Changed packages: $changed_packages"
+          echo "changed-packages=$changed_packages" >> "$GITHUB_OUTPUT"
 
-      #       echo "Updated Helm version to $NEW_VERSION"
-      #     else
-      #       echo "No need to bump Helm version"
-      #     fi
+      - name: Patch bump Helm if needed
+        run: |
+          helm_bumped="$(echo ${{ steps.check.outputs.changed-packages }} | jq 'has("helm")')"
+          non_helm_bumped="$(echo ${{ steps.check.outputs.changed-packages }} | jq '[keys[] | select(. != "helm")] | length > 0')"
+
+          if [[ "$helm_bumped" == "false" && "$non_helm_bumped" == "true" ]]; then
+
+            current_version=$(jq -r '.["helm"]' .release-please-manifest.json)
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$current_version"
+            new_version="${MAJOR}.${MINOR}.$((PATCH + 1))"
+
+            jq --arg new "$new_version" '.["helm"] = $new' \
+              .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
+
+            sed -i "s/^version: .*/version: $new_version/" helm/Chart.yaml
+
+            echo "Helm package version updated to $new_version"
+          else
+            echo "No Helm patch bump needed."
+          fi
 
       # TODO: use mise instead
       - name: Setup `uv`
@@ -111,9 +113,8 @@ jobs:
         # PEP440 disallows dash-suffixes, so we replace with plus (1.2.3-abcd123 -> 1.2.3+abcd123)
         # no-op for release versions (1.2.3 -> 1.2.3)
         run: |
-          cd api  # TODO: generalize
-          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' pyproject.toml
-          uv lock
+          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' api/pyproject.toml
+          uv lock --directory api
 
       - name: Fix tag references in helm chart
         run: |
