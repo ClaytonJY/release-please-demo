@@ -147,6 +147,8 @@ jobs:
 
       - name: Add helm chart release to PR body
         if: ${{ steps.bump.outputs.bump-helm == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pr_body=$(gh pr view ${{ env.PR_NUMBER }} --json body -q .body)
 
