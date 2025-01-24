@@ -172,8 +172,6 @@ jobs:
           api_version=$(cat .release-please-manifest.json | jq -r '.["api"]')
 
           helm_release_notes=$(cat <<-EOF
-
-
           <details><summary>chart: $new_version</summary>
 
           ## [$new_version](https://github.com/ClaytonJY/release-please-demo/compare/api-v$old_version...api-v$new_version) ($date)
@@ -183,11 +181,11 @@ jobs:
 
           * update api component to version $api_version ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
           </details>
-
           EOF
           )
 
-          updated_body=$(printf "%s\n---\n%s%s\n\n---\n%s" "$header" "$content" "$helm_release_notes" "$footer")
+          # command substitution strips trailing newlines so we add a few back
+          updated_body=$(printf "%s\n---\n%s\n\n%s\n\n---\n%s" "$header" "$content" "$helm_release_notes" "$footer")
 
           gh pr edit ${{ env.PR_NUMBER }} --body "$updated_body"
 
