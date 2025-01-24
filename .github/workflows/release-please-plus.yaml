@@ -154,16 +154,22 @@ jobs:
 
           IFS=$'\n---\n' read -r header content footer <<< "$pr_body"
 
-          date=$(echo "$pr_body" | sed -En 's/^##.+\(([0-9-]+)\)/\1/p')
+          # thanks, chatGPT
+          # TODO: dumb down
+          header=$(echo "$pr_body" | sed -n '1,/^---$/p' | sed '$d')
+          content=$(echo "$pr_body" | sed -n '/^---$/,/^---$/p' | sed '1d;$d')
+          footer=$(echo "$pr_body" | sed -n '/^---$/,/^---$/!p' | sed -n '2,$p')
 
           # TODO: deduplicate with above
           git fetch --no-tags --prune --depth=1 origin ${{ inputs.target-branch }}
           old_manifest="$(git show origin/${{ inputs.target-branch }}:.release-please-manifest.json || echo '{}')"
 
           old_version=$(echo "$old_manifest" | jq -r '.["helm"]')
-          new_version="${{ fromJSON(steps.check.outputs.changed-packages).chart }}"
+          new_version$(cat .release-please-manifest.json | jq -r '.["helm"]')
 
           head_hash=$(git rev-parse HEAD)
+
+          api_version=$(cat .release-please-manifest.json | jq -r '.["api"]')
 
           helm_release_notes=$(cat <<-EOF
 
@@ -174,7 +180,7 @@ jobs:
 
             ### Bug Fixes
 
-            * update `api` component to verion ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
+            * update `api` component to version $api_version ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
             </details>
 
           EOF
