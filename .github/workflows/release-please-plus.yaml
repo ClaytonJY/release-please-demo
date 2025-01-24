@@ -55,6 +55,7 @@ jobs:
     if: needs.release-please.outputs.pr != ''
     env:
       RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
+      PR_NUMBER: ${{ fromJson(needs.release-please.outputs.pr).number }}
     steps:
       - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
         uses: actions/checkout@v4
@@ -82,26 +83,33 @@ jobs:
           echo "Changed packages: $changed_packages"
           echo "changed-packages=$changed_packages" >> "$GITHUB_OUTPUT"
 
-      - name: Patch bump Helm if needed
+      - name: Determine if Helm chart needs a patch bump
+        id: bump
         run: |
           helm_bumped="$(echo '${{ steps.check.outputs.changed-packages }}' | jq 'has("helm")')"
           non_helm_bumped="$(echo '${{ steps.check.outputs.changed-packages }}' | jq '[keys[] | select(. != "helm")] | length > 0')"
 
           if [[ "$helm_bumped" == "false" && "$non_helm_bumped" == "true" ]]; then
-
-            current_version=$(jq -r '.["helm"]' .release-please-manifest.json)
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$current_version"
-            new_version="${MAJOR}.${MINOR}.$((PATCH + 1))"
-
-            jq --arg new "$new_version" '.["helm"] = $new' \
-              .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
-
-            sed -i "s/^version: .*/version: $new_version/" helm/Chart.yaml
-
-            echo "Helm package version updated to $new_version"
+            bump_helm=true
           else
-            echo "No Helm patch bump needed."
+            bump_helm=false
           fi
+
+          echo "bump-helm=$bump_helm" >> "$GITHUB_OUTPUT"
+
+      - name: Bump helm chart patch version
+        if: ${{ steps.bump.outputs.bump-helm == 'true' }}
+        run: |
+          current_version=$(jq -r '.["helm"]' .release-please-manifest.json)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$current_version"
+          new_version="${MAJOR}.${MINOR}.$((PATCH + 1))"
+
+          jq --arg new "$new_version" '.["helm"] = $new' \
+            .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
+
+          sed -i "s/^version: .*/version: $new_version/" helm/Chart.yaml
+
+          echo "Helm package version updated to $new_version"
 
       # TODO: use mise instead
       - name: Setup `uv`
@@ -136,6 +144,44 @@ jobs:
           else
             echo "No changes to commit"
           fi
+
+      - name: Add helm chart release to PR body
+        if: ${{ steps.bump.outputs.bump-helm == 'true' }}
+        run: |
+          pr_body=$(gh pr view ${{ env.PR_NUMBER }} --json body -q .body)
+
+          IFS=$'\n---\n' read -r header content footer <<< "$pr_body"
+
+          date=$(echo "$pr_body" | sed -En 's/^##.+\(([0-9-]+)\)/\1/p')
+
+          # TODO: deduplicate with above
+          git fetch --no-tags --prune --depth=1 origin ${{ inputs.target-branch }}
+          old_manifest="$(git show origin/${{ inputs.target-branch }}:.release-please-manifest.json || echo '{}')"
+
+          old_version=$(echo "$old_manifest" | jq -r '.["helm"]')
+          new_version="${{ fromJSON(steps.check.outputs.changed-packages).chart }}"
+
+          head_hash=$(git rev-parse HEAD)
+
+          helm_release_notes=$(cat <<-EOF
+
+            <details><summary>chart: $new_version</summary>
+
+            ## [$new_version](https://github.com/ClaytonJY/release-please-demo/compare/api-v$old_version...api-v$new_version) ($date)
+
+
+            ### Bug Fixes
+
+            * update `api` component to verion ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
+            </details>
+
+          EOF
+          )
+
+          updated_content="$content\n$helm_release_notes"
+          updated_body="$header\n---\n$updated_content\n---\n$footer"
+
+          gh pr edit ${{ env.PR_NUMBER }} --body "$updated_body"
 
   # automerge-release-pr:
   #   name: Auto-merge release PR after checks pass
