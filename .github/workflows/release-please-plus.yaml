@@ -152,36 +152,42 @@ jobs:
         run: |
           pr_body=$(gh pr view ${{ env.PR_NUMBER }} --json body -q .body)
 
-          IFS=$'\n---\n' read -r header content footer <<< "$pr_body"
+          # thanks, chatGPT
+          # TODO: dumb down
+          header=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==1 {print $0}')
+          content=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==2 {print $0}')
+          footer=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==3 {print $0}')
 
-          date=$(echo "$pr_body" | sed -En 's/^##.+\(([0-9-]+)\)/\1/p')
+          date=$(echo "$content" | sed -En 's/^##.+\(([0-9-]+)\)/\1/p')
 
           # TODO: deduplicate with above
           git fetch --no-tags --prune --depth=1 origin ${{ inputs.target-branch }}
           old_manifest="$(git show origin/${{ inputs.target-branch }}:.release-please-manifest.json || echo '{}')"
 
           old_version=$(echo "$old_manifest" | jq -r '.["helm"]')
-          new_version="${{ fromJSON(steps.check.outputs.changed-packages).chart }}"
+          new_version=$(cat .release-please-manifest.json | jq -r '.["helm"]')
 
           head_hash=$(git rev-parse HEAD)
 
+          api_version=$(cat .release-please-manifest.json | jq -r '.["api"]')
+
           helm_release_notes=$(cat <<-EOF
 
-            <details><summary>chart: $new_version</summary>
 
-            ## [$new_version](https://github.com/ClaytonJY/release-please-demo/compare/api-v$old_version...api-v$new_version) ($date)
+          <details><summary>chart: $new_version</summary>
+
+          ## [$new_version](https://github.com/ClaytonJY/release-please-demo/compare/api-v$old_version...api-v$new_version) ($date)
 
 
-            ### Bug Fixes
+          ### Bug Fixes
 
-            * update `api` component to verion ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
-            </details>
+          * update api component to version $api_version ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
+          </details>
 
           EOF
           )
 
-          updated_content="$content\n$helm_release_notes"
-          updated_body="$header\n---\n$updated_content\n---\n$footer"
+          updated_body=$(printf "%s\n---\n%s%s\n\n---\n%s" "$header" "$content" "$helm_release_notes" "$footer")
 
           gh pr edit ${{ env.PR_NUMBER }} --body "$updated_body"
 
