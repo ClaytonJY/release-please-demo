@@ -1,0 +1,79 @@
+name: Build & Push Docker Images
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to build from.
+        type: string
+        required: true
+    outputs:
+      packages:
+        description: "JSON object of packages built & pushed. Keys are package name, values are versions."
+        value: ${{ jobs.identify-builds.outputs.packages }}
+
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  identify-builds:
+    name: Identify what to build
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.identify.outputs.packages }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Identify packages to build
+        id: identify
+        run: |
+          packages=$(jq -c 'to_entries | map(select(.value | test("-[a-f0-9]{7}$"))) | .[].key' .release-please-manifest.json)
+
+          echo "Packages to build: $packages"
+          echo "packages=$packages" >> $GITHUB_OUTPUT
+
+  api:
+    name: Build & Push API
+    runs-on: ubuntu-latest
+    needs: identify-builds
+    if: ${{ contains(fromJSON(needs.identify-builds.outputs.packages), 'api') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      # TODO: use buildx & enable caching
+
+      - name: Login to GitHub Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from release-please manifest
+        id: version
+        run: |
+          version=$(jq -r '.["api"]' .release-please-manifest.json)
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Standardize docker tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/api
+          tags: |
+            type=semver,pattern={{version}},value=v${{ steps.version.outputs.version }}
+
+      - name: Build & push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: api
+          tags: ${{ steps.meta.outputs.tags }}
+          push: true
