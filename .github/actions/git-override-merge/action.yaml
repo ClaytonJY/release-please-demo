@@ -1,0 +1,31 @@
+name: Override merge a source branch into current branch
+description: |
+  Adds a commit to current branch so it looks identical to source branch.
+  Commit has two parents: HEAD and source branch.
+inputs:
+  source-branch:
+    description: "Branch to imitate"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: "Configure git user"
+      uses: ./.github/actions/git-config-user
+
+    - name: "Fetch source branch ${{ inputs.source-branch }}"
+      shell: bash
+      run: |
+        git fetch origin ${{ inputs.source-branch }}:${{ inputs.source-branch }}
+
+    - name: "Override merge ${{ inputs.source-branch }} into current branch"
+      # this will create a merge commit, though the target-branch parent is likely short-lived
+      # we could consider a squash commit instead, but would lose some lineage
+      shell: bash
+      run: |
+        # register source branch as a parent, without changing file state nor making a commit
+        git merge -s ours --no-commit --allow-unrelated-histories ${{ inputs.source-branch }}
+
+        # replace target contents with source branch contents
+        git checkout ${{ inputs.source-branch }} -- .
+
+        git commit -m "ci: Overide merge from ${{ inputs.source-branch}}"
