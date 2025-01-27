@@ -56,6 +56,7 @@ jobs:
     env:
       RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
       PR_NUMBER: ${{ fromJson(needs.release-please.outputs.pr).number }}
+      GH_TOKEN: ${{ secrets.pat }}  # necessary for new commits to trigger further workflows
     steps:
       - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
         uses: actions/checkout@v4
@@ -147,8 +148,6 @@ jobs:
 
       - name: Add helm chart release to PR body
         if: ${{ steps.bump.outputs.bump-helm == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pr_body=$(gh pr view ${{ env.PR_NUMBER }} --json body -q .body)
 
