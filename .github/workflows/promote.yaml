@@ -73,11 +73,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Standardize Docker Tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/api
+          tags: |
+            type=semver,pattern={{version}},value=v${{ steps.versions.outputs.prerelease }}
+            type=semver,pattern={{version}},value=v${{ steps.versions.outputs.release }}
+
       - name: Promote API container
         run: |
-          docker pull ${{ steps.versions.outputs.prerelease }}
-          docker tag ${{ steps.versions.outputs.prerelease }} ${{ steps.versions.outputs.release }}
-          docker push ${{ steps.versions.outputs.release }}
+          docker pull ${{ steps.meta.outputs.tags[0] }}
+          docker tag ${{ steps.meta.outputs.tags[0] }} ${{ steps.meta.outputs.tags[1] }}
+          docker push ${{ steps.meta.outputs.tags[1] }}
 
   update-branches:
     needs:
