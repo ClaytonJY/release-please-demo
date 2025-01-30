@@ -40,10 +40,10 @@ jobs:
           packages=$(jq -c '
             to_entries
             | map(select(.value | test("-[a-f0-9]{7}$")))
-            | to_entries
+            | from_entries
           ' .release-please-manifest.json)
 
-          echo "Packages with git hash suffixed: $packages"
+          echo "Packages with git hash suffixes: $packages"
           echo "packages=$packages" >> $GITHUB_OUTPUT
 
   promote-api:
