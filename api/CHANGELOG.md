@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.7...api-v0.1.8) (2025-01-30)
+
+
+### Bug Fixes
+
+* **api:** yatf ([629587b](https://github.com/ClaytonJY/release-please-demo/commit/629587b6c934cd76ff2557e70c8a002fc2dcbc77))
+
 ## [0.1.7](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.6...api-v0.1.7) (2025-01-29)
 
 
