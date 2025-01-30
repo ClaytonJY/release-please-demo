@@ -53,15 +53,18 @@ jobs:
     if: ${{ fromJSON(needs.identify-builds.outputs.packages).api != '' }}
     steps:
 
-      - name: Identify Versions
+      - name: Identify prerelease and release versions
         id: versions
+        env:
+          PRERELEASE: ${{ fromJSON(needs.identify-builds.outputs.packages).api }}
         run: |
-          prerelease=$(echo ${{ needs.identify-builds.outputs.packages }} | jq -r '.api')
-          release=${prerelease_version%-*}
+          prerelease=${PRERELEASE}
+          release=${PRERELEASE%-*}
 
-          echo "Promoting ${prelease} -> ${release}"
-          echo "prerelease=${prerelease}" >> $GITHUB_OUTPUT
-          echo "release=${release}" >> $GITHUB_OUTPUT
+          echo "Prerelease: $prerelease"
+          echo "Release: $release"
+          echo "prerelease=$prerelease" >> $GITHUB_OUTPUT
+          echo "release=$release" >> $GITHUB_OUTPUT
 
       - name: Login to GitHub Docker Registry
         uses: docker/login-action@v3
@@ -70,10 +73,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Promote API container ${{ steps.versions.outputs.prelease }} to ${{ steps.versions.outputs.release }}
+      - name: Promote API container
         run: |
-          docker pull ${{ steps.versions.outputs.prelease }}
-          docker tag ${{ steps.versions.outputs.prelease }} ${{ steps.versions.outputs.release }}
+          docker pull ${{ steps.versions.outputs.prerelease }}
+          docker tag ${{ steps.versions.outputs.prerelease }} ${{ steps.versions.outputs.release }}
           docker push ${{ steps.versions.outputs.release }}
 
   update-branches:
