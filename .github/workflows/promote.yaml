@@ -37,7 +37,11 @@ jobs:
       - name: Identify packages to build
         id: identify
         run: |
-          packages=$(jq -c 'to_entries | map(select(.value | test("-[a-f0-9]{7}$"))) | .[].key' .release-please-manifest.json)
+          packages=$(jq -c '
+            to_entries
+            | map(select(.value | test("-[a-f0-9]{7}$")))
+            | to_entries
+          ' .release-please-manifest.json)
 
           echo "Packages with git hash suffixed: $packages"
           echo "packages=$packages" >> $GITHUB_OUTPUT
@@ -46,7 +50,7 @@ jobs:
     name: Promote API container
     runs-on: ubuntu-latest
     needs: identify-builds
-    if: ${{ contains(fromJSON(needs.identify-builds.outputs.packages), 'api') }}
+    if: ${{ fromJSON(needs.identify-builds.outputs.packages).api != '' }}
     steps:
 
       - name: Identify Versions
@@ -55,7 +59,7 @@ jobs:
           prerelease=$(echo ${{ needs.identify-builds.outputs.packages }} | jq -r '.api')
           release=${prerelease_version%-*}
 
-          echo "${prelease} -> ${release}"
+          echo "Promoting ${prelease} -> ${release}"
           echo "prerelease=${prerelease}" >> $GITHUB_OUTPUT
           echo "release=${release}" >> $GITHUB_OUTPUT
 
