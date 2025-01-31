@@ -84,9 +84,14 @@ jobs:
 
       - name: Promote API container
         run: |
-          docker pull ${{ steps.meta.outputs.tags[0] }}
-          docker tag ${{ steps.meta.outputs.tags[0] }} ${{ steps.meta.outputs.tags[1] }}
-          docker push ${{ steps.meta.outputs.tags[1] }}
+          prerelease=$(echo "${{ steps.meta.outputs.tags }}" | sed -n 1p)
+          release=$(echo "${{ steps.meta.outputs.tags }}" | sed -n 2p)
+
+          echo "Promoting ${prerelease} to ${release}"
+
+          docker pull ${prerelease}
+          docker tag ${prerelease} ${release}
+          docker push $${release}
 
   update-branches:
     needs:
