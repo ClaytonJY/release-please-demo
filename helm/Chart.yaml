@@ -2,4 +2,4 @@ apiVersion: v2
 name: release-please-demo
 description: A simple Helm chart for the release-please-demo "application".
 type: application
-version: 0.1.9
+version: 0.1.10
