@@ -10,7 +10,7 @@ on:
       - .release-please-manifest.json  # only release PRs
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
