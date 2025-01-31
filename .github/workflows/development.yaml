@@ -1,0 +1,124 @@
+name: Build and Update Development
+
+on:
+  workflow_dispatch
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: read
+  packages: write
+
+jobs:
+  build-branch:
+    name: Update build branch
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: development
+
+      - name: Override merge from PR branch
+        uses: ./.github/actions/git-override-merge
+        with:
+          source-branch: ${{ github.ref }}
+
+      - name: Determine changed packages
+        id: changed
+        run: |
+          # fetch old from current development branch
+          old_manifest="$(git show origin/development:.release-please-manifest.json || echo '{}')"
+
+          # fetch new manifest directly from PR branch
+          new_manifest="$(cat .release-please-manifest.json || echo '{}')"
+
+          # determine changed packages
+          changed_packages="$(jq --argjson old "$old_manifest" --argjson new "$new_manifest" -c -n '
+            $new | with_entries(select(.value != ($old[.key])))
+          ')"
+
+          echo "Changed packages: $changed_packages"
+          echo "changed-packages=$changed_packages" >> "$GITHUB_OUTPUT"
+
+      - name: Append git hash suffix to changed packages
+        env:
+          CHANGED_PACKAGES: ${{ steps.changed.outputs.changed-packages }}
+        run: |
+          api_changed=$(echo $CHANGED_PACKAGES | jq 'has("api")')
+          if [ "$api_changed" = "true" ]; then
+            api_version=$(echo $CHANGED_PACKAGES | jq -r '.api')
+            short_sha=${GITHUB_SHA:0:7}
+            new_api_version="${api_version}-${short_sha}"
+
+            sed -i "s/^\(  api:\).*/\1 ${new_api_version}/" helm/values.yaml
+            jq --arg new "$new_api_version" '.["api"] = $new' \
+              .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
+
+            echo "api changed to $new_api_version in helm/values.yaml and .release-please-manifest.json; committing"
+          else
+            echo "api not changed"
+          fi
+          - name: Install uv
+          uses: astral-sh/setup-uv@v5
+          with:
+            version: "0.5.23"
+
+      - name: Update lockfile
+        run: |
+          sed -E -i 's/(^version *= *"[^"]*)-/\1+/' api/pyproject.toml
+          uv lock --directory api
+
+      - name: Commit & push changes to build branch
+        run: |
+          git add helm/values.yaml .release-please-manifest.json api/uv.lock
+          git commit -m "ci: Update versions and lockfiles as needed"
+
+          git push origin HEAD:build/${{ github.sha }}
+
+
+  build:
+    name: Build packages from build branch.
+    needs: build-branch
+    uses: ./.github/workflows/build.yaml
+    with:
+      ref: build/${{ github.sha }}
+
+  development:
+    name: Update development branch
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: build/${{ github.sha }}
+          fetch-depth: 10
+
+      - name: Push changes to development branch
+        run: |
+          git fetch origin development
+          git push origin HEAD:development
+
+  cleanup:
+    name: Cleanup build branch
+    needs:
+      - build-branch
+      - development
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: build/${{ github.sha }}
+
+      - name: Delete build branch from GitHub
+        run: |
+          git push origin --delete build/${{ github.sha }} || true
