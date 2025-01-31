@@ -91,7 +91,7 @@ jobs:
 
           docker pull ${prerelease}
           docker tag ${prerelease} ${release}
-          docker push $${release}
+          docker push ${release}
 
   update-branches:
     needs:
