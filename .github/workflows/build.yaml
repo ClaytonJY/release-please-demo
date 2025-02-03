@@ -174,10 +174,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.build-branch.outputs.build-branch }}
+          fetch-depth: 0  # get all branches, including env branch and common history
 
       - name: Push changes to environment branch
         run: |
-          git fetch origin ${{ needs.build-branch.outputs.env-branch }}
           git push origin HEAD:${{ needs.build-branch.outputs.env-branch }}
 
   cleanup-build-branch:
