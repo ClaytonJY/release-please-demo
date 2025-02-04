@@ -10,6 +10,15 @@ permissions:
   pull-requests: write
   packages: write
 
+  # `gh pr view` needs a lot!
+  # see https://github.com/cli/cli/issues/6274#issuecomment-2439692639
+  checks: read
+  statuses: read
+
+  # can omit these two for public projects
+  actions: read
+  repository-projects: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -42,7 +51,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
-          token: ${{ secrets.RELEASE_PLEASE_PAT }}  # must use PAT to trigger workflows from commits
 
       - name: Determine which packages changed
         id: changed
