@@ -32,7 +32,7 @@ jobs:
       - name: Checkout staging branch
         uses: actions/checkout@v4
         with:
-          ref: staging
+          ref: env/staging
 
       - name: Identify packages to build
         id: identify
@@ -100,8 +100,8 @@ jobs:
     strategy:
       matrix:
         branch:
-          - staging
-          - production
+          - env/staging
+          - env/production
     steps:
 
       - name: Checkout ${{ matrix.branch }} branch
