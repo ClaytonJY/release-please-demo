@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.2.0](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.17...api-v0.2.0) (2025-02-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* add a question mark
+
+### Features
+
+* add a question mark ([03610e0](https://github.com/ClaytonJY/release-please-demo/commit/03610e0a481c840eafe2ea13a1dcac6a934dfbcc))
+* **api:** yatf ([91bb220](https://github.com/ClaytonJY/release-please-demo/commit/91bb22016ca4dff22b93296d2bc6f35a694960db))
+* yet another test fix ([#96](https://github.com/ClaytonJY/release-please-demo/issues/96)) ([0a44fe2](https://github.com/ClaytonJY/release-please-demo/commit/0a44fe2fa30bb5db65b0cd67b2e59a1b210974d0))
+
+## [0.1.17](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.16...api-v0.1.17) (2025-02-04)
+
+
+### Bug Fixes
+
+* yatf ([b3a2ed3](https://github.com/ClaytonJY/release-please-demo/commit/b3a2ed35cec4620017013128fa43f5df63fba31a))
+
+## [0.1.16](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.15...api-v0.1.16) (2025-02-04)
+
+
+### Bug Fixes
+
+* test simplified workflows ([#91](https://github.com/ClaytonJY/release-please-demo/issues/91)) ([cfd7052](https://github.com/ClaytonJY/release-please-demo/commit/cfd70523a731f684687a30af7038d415c97d18b7))
+
 ## [0.1.15](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.14...api-v0.1.15) (2025-01-31)
 
 
