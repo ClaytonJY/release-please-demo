@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.2.0...api-v0.2.1) (2025-02-06)
+
+
+### Bug Fixes
+
+* some silly fix ([#98](https://github.com/ClaytonJY/release-please-demo/issues/98)) ([a0d51fe](https://github.com/ClaytonJY/release-please-demo/commit/a0d51fe2895effd815a8fa6e4e836ec812cfa8c6))
+
 ## [0.2.0](https://github.com/ClaytonJY/release-please-demo/compare/api-v0.1.17...api-v0.2.0) (2025-02-05)
 
 
