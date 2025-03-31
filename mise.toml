@@ -1,5 +1,6 @@
 [tools]
 helm = "latest"
+node = "latest"
 "npm:release-please" = "latest"
 
 # uv didn't update lockfiles for versions > 0.5.18 and < 0.5.23

@@ -2,9 +2,7 @@
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
   "always-update": true,
-
   "bootstrap-sha": "3a837b64bb25b7ea3af89e269a46539cf673c2e5",
-
   "packages": {
     "helm": {
       "release-type": "helm",
@@ -14,7 +12,14 @@
     "api": {
       "release-type": "python",
       "package-name": "api",
-      "initial-version": "0.1.0"
+      "initial-version": "0.1.0",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "uv.lock",
+          "jsonpath": "$.package[?(@.name.value=='release-please-demo')].version"
+        }
+      ]
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
