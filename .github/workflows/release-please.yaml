@@ -37,142 +37,142 @@ jobs:
           target-branch: main
           # by _not_ using our PAT for the token here, we avoid starting build jobs before the next step
 
-  update-release-branch:
-  # release-please doesn't cover enough of our needs, specifically the helm chart's dependence on the api
-  # so we must wrap release-please, altering the release PR branch to include a helm release when necessary
-    name: Update Release Branch
-    needs: release-please
-    # skip this job if the release-please PR wasn't created nor updated
-    if: needs.release-please.outputs.pr != ''
-    runs-on: ubuntu-latest
-    env:
-      RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
-      PR_NUMBER: ${{ fromJson(needs.release-please.outputs.pr).number }}
-    steps:
-      - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_BRANCH }}
-          # need a non-default token in order to trigger additional workflows from commits we make here
-          # see https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
-          token: ${{ secrets.RELEASE_PLEASE_PAT }}
-      - name: Determine which packages changed
-        id: changed
-        run: |
-          # fetch old manifest directly from main
-          git fetch --no-tags --prune --depth=1 origin main
-          old_manifest="$(git show origin/main:.release-please-manifest.json || echo '{}')"
+  # update-release-branch:
+  # # release-please doesn't cover enough of our needs, specifically the helm chart's dependence on the api
+  # # so we must wrap release-please, altering the release PR branch to include a helm release when necessary
+  #   name: Update Release Branch
+  #   needs: release-please
+  #   # skip this job if the release-please PR wasn't created nor updated
+  #   if: needs.release-please.outputs.pr != ''
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     RELEASE_BRANCH: ${{ fromJson(needs.release-please.outputs.pr).headBranchName }}
+  #     PR_NUMBER: ${{ fromJson(needs.release-please.outputs.pr).number }}
+  #   steps:
+  #     - name: Checkout release branch ${{ env.RELEASE_BRANCH }}
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ env.RELEASE_BRANCH }}
+  #         # need a non-default token in order to trigger additional workflows from commits we make here
+  #         # see https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+  #         token: ${{ secrets.RELEASE_PLEASE_PAT }}
+  #     - name: Determine which packages changed
+  #       id: changed
+  #       run: |
+  #         # fetch old manifest directly from main
+  #         git fetch --no-tags --prune --depth=1 origin main
+  #         old_manifest="$(git show origin/main:.release-please-manifest.json || echo '{}')"
 
-          new_manifest="$(cat .release-please-manifest.json)"
+  #         new_manifest="$(cat .release-please-manifest.json)"
 
-          # build an object of bumped packages with their new version, e.g.
-          # {
-          #   "some-package": "1.2.3",
-          #   "another-package": "4.5.6"
-          # }
-          changed_packages="$(jq --argjson old "$old_manifest" --argjson new "$new_manifest" -c -n '
-            $new | with_entries(select(.value != ($old[.key])))
-          ')"
+  #         # build an object of bumped packages with their new version, e.g.
+  #         # {
+  #         #   "some-package": "1.2.3",
+  #         #   "another-package": "4.5.6"
+  #         # }
+  #         changed_packages="$(jq --argjson old "$old_manifest" --argjson new "$new_manifest" -c -n '
+  #           $new | with_entries(select(.value != ($old[.key])))
+  #         ')"
 
-          echo "Changed packages: $changed_packages"
-          echo "packages=$changed_packages" >> "$GITHUB_OUTPUT"
+  #         echo "Changed packages: $changed_packages"
+  #         echo "packages=$changed_packages" >> "$GITHUB_OUTPUT"
 
-      ## CUSTOMIZE ##
-      ## edit and duplicate this step as needed ##
-      - name: Update api reference in helm chart
-        if: ${{ fromJSON(steps.changed.outputs.packages).api != ''}}
-        env:
-          API_VERSION: ${{ fromJSON(steps.changed.outputs.packages).api }}
-        run: |
-          # TODO: use yq instead?
-          sed -i "s/^\(  api:\).*/\1 ${API_VERSION}/" helm/values.yaml
-      ## END CUSTOMIZE ##
+  #     ## CUSTOMIZE ##
+  #     ## edit and duplicate this step as needed ##
+  #     - name: Update api reference in helm chart
+  #       if: ${{ fromJSON(steps.changed.outputs.packages).api != ''}}
+  #       env:
+  #         API_VERSION: ${{ fromJSON(steps.changed.outputs.packages).api }}
+  #       run: |
+  #         # TODO: use yq instead?
+  #         sed -i "s/^\(  api:\).*/\1 ${API_VERSION}/" helm/values.yaml
+  #     ## END CUSTOMIZE ##
 
-      - name: Determine if Helm chart needs a patch bump
-        # if the non-helm package is bumped, we need to bump the helm chart too
-        id: bump
-        run: |
-          helm_bumped="$(echo '${{ steps.changed.outputs.packages }}' | jq 'has("helm")')"
-          non_helm_bumped="$(echo '${{ steps.changed.outputs.packages }}' | jq '[keys[] | select(. != "helm")] | length > 0')"
+  #     - name: Determine if Helm chart needs a patch bump
+  #       # if the non-helm package is bumped, we need to bump the helm chart too
+  #       id: bump
+  #       run: |
+  #         helm_bumped="$(echo '${{ steps.changed.outputs.packages }}' | jq 'has("helm")')"
+  #         non_helm_bumped="$(echo '${{ steps.changed.outputs.packages }}' | jq '[keys[] | select(. != "helm")] | length > 0')"
 
-          if [[ "$helm_bumped" == "false" && "$non_helm_bumped" == "true" ]]; then
-            bump_helm=true
-          else
-            bump_helm=false
-          fi
+  #         if [[ "$helm_bumped" == "false" && "$non_helm_bumped" == "true" ]]; then
+  #           bump_helm=true
+  #         else
+  #           bump_helm=false
+  #         fi
 
-          echo "bump-helm=$bump_helm" >> "$GITHUB_OUTPUT"
+  #         echo "bump-helm=$bump_helm" >> "$GITHUB_OUTPUT"
 
-      - name: Bump helm chart patch version
-        if: ${{ steps.bump.outputs.bump-helm == 'true' }}
-        run: |
-          current_version=$(jq -r '.["helm"]' .release-please-manifest.json)
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$current_version"
-          new_version="${MAJOR}.${MINOR}.$((PATCH + 1))"
+  #     - name: Bump helm chart patch version
+  #       if: ${{ steps.bump.outputs.bump-helm == 'true' }}
+  #       run: |
+  #         current_version=$(jq -r '.["helm"]' .release-please-manifest.json)
+  #         IFS='.' read -r MAJOR MINOR PATCH <<< "$current_version"
+  #         new_version="${MAJOR}.${MINOR}.$((PATCH + 1))"
 
-          jq --arg new "$new_version" '.["helm"] = $new' \
-            .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
+  #         jq --arg new "$new_version" '.["helm"] = $new' \
+  #           .release-please-manifest.json > tmp && mv tmp .release-please-manifest.json
 
-          sed -i "s/^version: .*/version: $new_version/" helm/Chart.yaml
+  #         sed -i "s/^version: .*/version: $new_version/" helm/Chart.yaml
 
-          echo "Helm package version updated to $new_version"
+  #         echo "Helm package version updated to $new_version"
 
-      - name: Configure git user
-        uses: ./.github/actions/git-config-user
+  #     - name: Configure git user
+  #       uses: ./.github/actions/git-config-user
 
-      - name: Commit and push any changed files
-        run: |
-          git add -u
-          if ! git diff-index --cached --quiet HEAD; then
-            git commit -m "ci: post-release-please updates"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+  #     - name: Commit and push any changed files
+  #       run: |
+  #         git add -u
+  #         if ! git diff-index --cached --quiet HEAD; then
+  #           git commit -m "ci: post-release-please updates"
+  #           git push
+  #         else
+  #           echo "No changes to commit"
+  #         fi
 
-      ## CUSTOMIZE ##
-      ## replace all references to `api` as appropriate ##
-      - name: Add helm chart release to PR body
-        if: ${{ steps.bump.outputs.bump-helm == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pr_body=$(gh pr view ${{ env.PR_NUMBER }} --json body -q .body)
+  #     ## CUSTOMIZE ##
+  #     ## replace all references to `api` as appropriate ##
+  #     - name: Add helm chart release to PR body
+  #       if: ${{ steps.bump.outputs.bump-helm == 'true' }}
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: |
+  #         pr_body=$(gh pr view ${{ env.PR_NUMBER }} --json body -q .body)
 
-          # thanks, chatGPT
-          # TODO: dumb down, maybe convert to github script?
-          header=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==1 {print $0}')
-          content=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==2 {print $0}')
-          footer=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==3 {print $0}')
+  #         # thanks, chatGPT
+  #         # TODO: dumb down, maybe convert to github script?
+  #         header=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==1 {print $0}')
+  #         content=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==2 {print $0}')
+  #         footer=$(echo "$pr_body" | awk -v RS='\n---\n' 'NR==3 {print $0}')
 
-          date=$(echo "$content" | sed -En 's/^##.+\(([0-9-]+)\)/\1/p')
+  #         date=$(echo "$content" | sed -En 's/^##.+\(([0-9-]+)\)/\1/p')
 
-          # TODO: deduplicate with above
-          git fetch --no-tags --prune --depth=1 origin main
-          old_manifest="$(git show origin/main:.release-please-manifest.json || echo '{}')"
+  #         # TODO: deduplicate with above
+  #         git fetch --no-tags --prune --depth=1 origin main
+  #         old_manifest="$(git show origin/main:.release-please-manifest.json || echo '{}')"
 
-          old_version=$(echo "$old_manifest" | jq -r '.["helm"]')
-          new_version=$(cat .release-please-manifest.json | jq -r '.["helm"]')
+  #         old_version=$(echo "$old_manifest" | jq -r '.["helm"]')
+  #         new_version=$(cat .release-please-manifest.json | jq -r '.["helm"]')
 
-          head_hash=$(git rev-parse HEAD)
+  #         head_hash=$(git rev-parse HEAD)
 
-          api_version=$(cat .release-please-manifest.json | jq -r '.["api"]')
+  #         api_version=$(cat .release-please-manifest.json | jq -r '.["api"]')
 
-          helm_release_notes=$(cat <<-EOF
-          <details><summary>chart: $new_version</summary>
+  #         helm_release_notes=$(cat <<-EOF
+  #         <details><summary>chart: $new_version</summary>
 
-          ## [$new_version](https://github.com/ClaytonJY/release-please-demo/compare/api-v$old_version...api-v$new_version) ($date)
+  #         ## [$new_version](https://github.com/ClaytonJY/release-please-demo/compare/api-v$old_version...api-v$new_version) ($date)
 
 
-          ### Bug Fixes
+  #         ### Bug Fixes
 
-          * update api component to version $api_version ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
-          </details>
-          EOF
-          )
+  #         * update api component to version $api_version ([${head_hash::7}](https://github.com/ClaytonJY/release-please-demo/commit/$head_hash))
+  #         </details>
+  #         EOF
+  #         )
 
-          # command substitution strips trailing newlines so we add a few back
-          updated_body=$(printf "%s\n---\n%s\n\n%s\n\n---\n%s" "$header" "$content" "$helm_release_notes" "$footer")
+  #         # command substitution strips trailing newlines so we add a few back
+  #         updated_body=$(printf "%s\n---\n%s\n\n%s\n\n---\n%s" "$header" "$content" "$helm_release_notes" "$footer")
 
-          gh pr edit ${{ env.PR_NUMBER }} --body "$updated_body"
-      ## END CUSTOMIZE ##
+  #         gh pr edit ${{ env.PR_NUMBER }} --body "$updated_body"
+  #     ## END CUSTOMIZE ##

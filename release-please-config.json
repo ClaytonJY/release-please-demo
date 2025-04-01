@@ -15,9 +15,14 @@
       "initial-version": "0.1.0",
       "extra-files": [
         {
-          "type": "toml",
           "path": "uv.lock",
+          "type": "toml",
           "jsonpath": "$.package[?(@.name.value=='release-please-demo')].version"
+        },
+        {
+          "path": "/helm/values.yaml",
+          "type": "yaml",
+          "jsonpath": "$.versions.api"
         }
       ]
     }
