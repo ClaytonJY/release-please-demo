@@ -89,6 +89,7 @@ jobs:
       ## END CUSTOMIZE ##
 
       - name: Determine if Helm chart needs a patch bump
+        # if the non-helm package is bumped, we need to bump the helm chart too
         id: bump
         run: |
           helm_bumped="$(echo '${{ steps.changed.outputs.packages }}' | jq 'has("helm")')"
@@ -130,7 +131,7 @@ jobs:
           fi
 
       ## CUSTOMIZE ##
-      ## edit and/or duplicate all references to `api`
+      ## replace all references to `api` as appropriate ##
       - name: Add helm chart release to PR body
         if: ${{ steps.bump.outputs.bump-helm == 'true' }}
         env:

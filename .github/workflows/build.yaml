@@ -52,9 +52,8 @@ jobs:
           source-branch: ${{ github.ref }}
 
       ## CUSTOMIZE ##
-      ## replace or duplicate `api` references as needed ##
+      ## alter to edit version of your package instead of `api` ##
       - name: Add git suffix to versions
-        # only handles api package!
         run: |
           api_version=$(jq -r '.api' .release-please-manifest.json)
           short_sha=${GITHUB_SHA:0:7}
