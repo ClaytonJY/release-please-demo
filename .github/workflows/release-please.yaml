@@ -38,8 +38,9 @@ jobs:
           # by _not_ using our PAT for the token here, we avoid starting build jobs before the next step
 
   update-release-branch:
+  # release-please doesn't cover enough of our needs, specifically the helm chart's dependence on the api
+  # so we must wrap release-please, altering the release PR branch to include a helm release when necessary
     name: Update Release Branch
-    # Various updates are needed on release PRs to account for our tooling/approach
     needs: release-please
     # skip this job if the release-please PR wasn't created nor updated
     if: needs.release-please.outputs.pr != ''
@@ -52,8 +53,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
-          token: ${{ secrets.RELEASE_PLEASE_PAT }} # needed to trigger additional workflows
-
+          # need a non-default token in order to trigger additional workflows from commits we make here
+          # see https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+          token: ${{ secrets.RELEASE_PLEASE_PAT }}
       - name: Determine which packages changed
         id: changed
         run: |
@@ -64,10 +66,10 @@ jobs:
           new_manifest="$(cat .release-please-manifest.json)"
 
           # build an object of bumped packages with their new version, e.g.
-          #    {
-          #      "some-package": "1.2.3",
-          #      "another-package": "4.5.6"
-          #    }
+          # {
+          #   "some-package": "1.2.3",
+          #   "another-package": "4.5.6"
+          # }
           changed_packages="$(jq --argjson old "$old_manifest" --argjson new "$new_manifest" -c -n '
             $new | with_entries(select(.value != ($old[.key])))
           ')"
@@ -75,21 +77,8 @@ jobs:
           echo "Changed packages: $changed_packages"
           echo "packages=$changed_packages" >> "$GITHUB_OUTPUT"
 
-      - name: Update api reference in helm chart
-        if: ${{ fromJSON(steps.changed.outputs.packages).api != ''}}
-        env:
-          API_VERSION: ${{ fromJSON(steps.changed.outputs.packages).api }}
-        run: |
-          # TODO: use yq instead?
-          sed -i "s/^\(  api:\).*/\1 ${API_VERSION}/" helm/values.yaml
-
-      - name: Setup `uv`
-        if: ${{ fromJSON(steps.changed.outputs.packages).api != ''}}
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "0.5.23"
-
       - name: Determine if Helm chart needs a patch bump
+        # if the non-helm package is bumped, we need to bump the helm chart too
         id: bump
         run: |
           helm_bumped="$(echo '${{ steps.changed.outputs.packages }}' | jq 'has("helm")')"
@@ -130,6 +119,8 @@ jobs:
             echo "No changes to commit"
           fi
 
+      ## CUSTOMIZE ##
+      ## replace all references to `api` as appropriate ##
       - name: Add helm chart release to PR body
         if: ${{ steps.bump.outputs.bump-helm == 'true' }}
         env:
@@ -173,3 +164,4 @@ jobs:
           updated_body=$(printf "%s\n---\n%s\n\n%s\n\n---\n%s" "$header" "$content" "$helm_release_notes" "$footer")
 
           gh pr edit ${{ env.PR_NUMBER }} --body "$updated_body"
+      ## END CUSTOMIZE ##

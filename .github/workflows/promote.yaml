@@ -46,6 +46,8 @@ jobs:
           echo "Packages with git hash suffixes: $packages"
           echo "packages=$packages" >> $GITHUB_OUTPUT
 
+  ## CUSTOMIZE ##
+  ## edit and duplicate this job as needed; one for each artifact to promote ##
   promote-api:
     name: Promote API container
     runs-on: ubuntu-latest
@@ -92,10 +94,14 @@ jobs:
           docker pull ${prerelease}
           docker tag ${prerelease} ${release}
           docker push ${release}
+  ## END CUSTOMIZE ##
 
   update-branches:
     needs:
+      ## CUSTOMIZE ##
+      ## include every promotion job above ##
       - promote-api
+      ## END CUSTOMIZE ##
     runs-on: ubuntu-latest
     strategy:
       matrix:
